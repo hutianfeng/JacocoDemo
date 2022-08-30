@@ -1,0 +1,104 @@
+plugins {
+    id 'com.android.application'
+}
+
+apply plugin: 'jacoco' //加载代码覆盖库jacoco
+
+jacoco {
+    toolVersion = "0.8.8" //代码覆盖库jacoco版本号
+}
+
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.peak.jacocodemo"
+        minSdk 21
+        targetSdk 28
+        versionCode 1
+        versionName "1.0"
+
+//        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments clearPackageData: 'true'//instrument设置
+    }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+        release {
+            testCoverageEnabled = true
+//            minifyEnabled false
+//            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+//代码覆盖率相关配置
+def coverageSourceDirs = [
+        '../app/src/main/java'
+]
+
+task jacocoTestReport(type: JacocoReport) {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+
+    reports {
+        xml.enabled(true) // coveralls plugin depends on xml format report
+        html.enabled(true)
+        csv.enabled(true)
+    }
+    getClassDirectories().setFrom(
+            //检测覆盖率的class所在目录(以项目class所在目录为准)
+            fileTree(
+                    //检测覆盖率的class所在目录(以项目class所在目录为准)
+                    dir: './build/intermediates/javac/debug/classes',
+                    //增加以上目录中不需要检测的文件列表
+                    excludes: ['**/R*.class',
+                               '**/*$InjectAdapter.class',
+                               '**/*$ModuleAdapter.class',
+                               '**/*$ViewInjector*.class'
+                    ]
+            ))
+
+    //设置需要检测覆盖率的目录
+    getSourceDirectories().setFrom(files(coverageSourceDirs))
+    //存储APP运行时产生报告的路径
+    getExecutionData().setFrom(files("$buildDir/outputs/code-coverage/connected/coverage.ec"))
+
+    doFirst {
+        new File("$buildDir/intermediates/javac/").eachFileRecurse { file ->
+            if (file.name.contains('$$')) {
+                file.renameTo(file.path.replace('$$', '$'))
+            }
+        }
+    }
+}
+
+
+dependencies {
+
+//    implementation 'org.jacoco.ant:'
+    implementation 'androidx.appcompat:appcompat:1.5.0'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.navigation:navigation-fragment:2.5.0'
+    implementation 'androidx.navigation:navigation-ui:2.5.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+
+}
